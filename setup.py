@@ -11,12 +11,17 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
-name, version = 'zc.', '0'
+name, version = 'zc.zkzeo', '0'
 
-install_requires = ['setuptools']
-extras_require = dict(test=['zope.testing'])
+install_requires = [
+    'setuptools', 'zc.zk [static]', 'ZODB3', 'zc.thread']
+extras_require = dict(
+    test=['zope.testing', 'zc.zk [static,test]', 'manuel'],
+    )
 
 entry_points = """
+[console_scripts]
+zkrunzeo = zc.zkzeo.runzeo:main
 """
 
 from setuptools import setup

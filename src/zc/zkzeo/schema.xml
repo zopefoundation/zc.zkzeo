@@ -1,0 +1,11 @@
+<schema extends="package:ZEO:schema.xml">
+  <description>
+    This schema describes the configuration of the ZEO storage server
+    process that registers itself with ZooKeeper.
+  </description>
+
+  <import package="zc.zkzeo" file="server-component.xml" />
+
+  <section type="zookeeper" name="*" required="no" attribute="zookeeper" />
+
+</schema>

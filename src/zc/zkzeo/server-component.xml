@@ -1,0 +1,25 @@
+<component>
+
+  <sectiontype name="zookeeper">
+
+    <description>
+      Specify how to register a ZEO server with ZooKeeper
+    </description>
+
+    <key name="connection" datatype="string" required="no"
+         default="127.0.0.1:2181"
+         >
+      <description>
+        ZooKeeper connection string.
+      </description>
+    </key>
+
+    <key name="path" datatype="string" required="yes">
+      <description>
+        The path to register the 
+      </description>
+    </key>
+
+  </sectiontype>
+
+</component>

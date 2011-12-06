@@ -1,0 +1,9 @@
+<component>
+  <sectiontype
+      name="zkzeoclient"
+      datatype="zc.zkzeo._client.ZConfig"
+      implements="ZODB.storage"
+      extends="zeoclient">
+    <key name="zookeeper" datatype="string" required="yes" />
+  </sectiontype>
+</component>
