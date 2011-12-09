@@ -71,27 +71,44 @@ def server_exception_when_no_zookeeper_running_and_dynamic_port():
     FailedConnect: 192.0.2.42:2181
     """
 
-# def server_keeps_trying_when_no_zookeeper_running_and_fixed_port():
-#     """Don't keep a server from running if it has a fixed addr.
-#     """
+def server_session_timeout_setting():
+    """
+    >>> import zc.zkzeo.runzeo
+    >>> stop = zc.zkzeo.runzeo.test('''
+    ...   <zeo>
+    ...      address 127.0.0.1
+    ...   </zeo>
+    ...
+    ...   <zookeeper>
+    ...      connection zookeeper.example.com:2181
+    ...      path /databases/demo
+    ...      session-timeout 4242
+    ...   </zookeeper>
+    ...
+    ...   <filestorage>
+    ...      path demo.fs
+    ...   </filestorage>
+    ... ''')
 
-# # General principle is to keep a server running if clients can find it.
+    >>> import zc.zk
+    >>> zk = zc.zk.ZooKeeper('zookeeper.example.com:2181')
 
-# def behavior_of_wait_object_when_there_are_no_addresses():
-#     """
-#     """
+    >>> stop.server._ZKServer__zk.recv_timeout()
+    4242
 
+    >>> _ = stop()
+    """
 
 
 def setUp(test):
     zc.zk.testing.setUp(test, tree='/databases\n  /demo\n')
-    test.globs['_server_loop'] = ZEO.zrpc.connection.server_loop
+    test.globs['_server_loop'] = _server_loop = ZEO.zrpc.connection.server_loop
 
     # The original server loop spews thread exceptions during shutdowm.
     # This version doesn't.
     def server_loop(map):
         try:
-            test.globs['_server_loop'](map)
+            _server_loop(map)
         except Exception:
             if len(map) > 1:
                 raise
@@ -108,7 +125,9 @@ def test_suite():
         (re.compile(r'/127.0.0.1:\d+'), '/127.0.0.1:PORT'),
         ])
     suite = unittest.TestSuite((
-        doctest.DocTestSuite(),
+        doctest.DocTestSuite(
+            setUp=setUp, tearDown=zc.zk.testing.tearDown,
+            ),
         manuel.testing.TestSuite(
             manuel.doctest.Manuel(checker=checker) + manuel.capture.Manuel(),
             'README.txt',

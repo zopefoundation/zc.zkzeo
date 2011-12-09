@@ -157,5 +157,7 @@ def test(config, storage=None, zookeeper=None, threaded=True):
         run_zeo_server_for_testing.join(1)
         return run_zeo_server_for_testing
 
+    stop.server = server # :)
+
     event.wait(1)
     return stop
