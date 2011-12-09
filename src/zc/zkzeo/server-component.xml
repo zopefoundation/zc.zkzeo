@@ -20,6 +20,12 @@
       </description>
     </key>
 
+    <key name="session-timeout" datatype="integer" required="no">
+      <description>
+        ZooKeeper session timeout in milliseconds.
+      </description>
+    </key>
+
   </sectiontype>
 
 </component>

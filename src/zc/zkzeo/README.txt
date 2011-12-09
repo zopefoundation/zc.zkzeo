@@ -54,7 +54,7 @@ To start the server, use the ``zkrunzeo`` script::
 
     >>> import zc.zkzeo.runzeo, zc.zk
     >>> stop = zc.zkzeo.runzeo.test(
-    ...     server_conf, zookeeper='zookeeper.example.com:2181')
+    ...     server_conf)
     >>> zk = zc.zk.ZooKeeper('zookeeper.example.com:2181')
     >>> print zk.export_tree('/databases/demo', ephemeral=True),
     /demo
@@ -78,7 +78,7 @@ From Python, use ``zc.zkzeo.client``::
     >>> import zc.zkzeo
     >>> client = zc.zkzeo.client(
     ...     'zookeeper.example.com:2181', '/databases/demo',
-    ...     read_only=True)
+    ...     max_disconnect_poll=1)
 
 You pass a ZooKeeper connection string and a path.  The ``Client``
 constructor will create a client storage with addresses found as
@@ -101,7 +101,7 @@ section::
        <zkzeoclient>
           zookeeper zookeeper.example.com:2181
           server /databases/demo
-          read-only true
+          max-disconnect-poll 1
        </zkzeoclient>
     </zodb>
 
@@ -118,19 +118,13 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
 
 .. test
 
-  Double check the clients are working by opening a writable
-  connection and maing sure we see changes:
-
-    >>> writable_db = zc.zkzeo.DB('zookeeper.example.com:2181',
-    ...                           '/databases/demo')
-    >>> with writable_db.transaction() as conn:
-    ...     conn.root.x = 1
+  Double check the clients are working by opening a
+  connection and making sure we see changes:
 
     >>> import ZODB.config
     >>> db_from_config = ZODB.config.databaseFromString(conf)
     >>> with db_from_config.transaction() as conn:
-    ...     print conn.root()
-    {'x': 1}
+    ...     conn.root.x = 1
 
     >>> import ZODB
     >>> db_from_py = ZODB.DB(client)
@@ -138,17 +132,41 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
     ...     print conn.root()
     {'x': 1}
 
-  Restart the storage server and make sure clients reconnect:
+  When we stop the storage server, we'll get warnings from zc.zkzeo, the
+  clients will disconnect and will have no addresses:
+
+    >>> import zope.testing.loggingsupport
+    >>> handler = zope.testing.loggingsupport.Handler('zc.zkzeo')
+    >>> handler.install()
 
     >>> [old_addr] = zk.get_children('/databases/demo')
     >>> stop().exception
 
     >>> wait_until(lambda : not client.is_connected())
-    >>> wait_until(lambda : not writable_db.storage.is_connected())
     >>> wait_until(lambda : not db_from_config.storage.is_connected())
 
-    >>> stop = zc.zkzeo.runzeo.test(
-    ...     server_conf, zookeeper='zookeeper.example.com:2181')
+    >>> print handler
+    zc.zkzeo WARNING
+      No addresses from <zookeeper.example.com:2181/databases/demo>
+    zc.zkzeo WARNING
+      No addresses from <zookeeper.example.com:2181/databases/demo>
+
+    >>> handler.clear()
+
+  Looking at the client manager, we see that the address list is now empty:
+
+    >>> client._rpc_mgr
+    <ConnectionManager for []>
+
+  Let's sleep for a while to make sure we can wake up.  Of course, we
+  won't sleep *that* long, it's a test.
+
+    >>> import time
+    >>> time.sleep(9)
+
+  Now, we'll restart the server and clients will reconnect
+
+    >>> stop = zc.zkzeo.runzeo.test(server_conf)
 
     >>> [addr] = zk.get_children('/databases/demo')
     >>> addr != old_addr
@@ -158,22 +176,23 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
       /127.0.0.1:56837
         pid = 88841
 
-
-    >>> wait_until(writable_db.storage.is_connected)
-    >>> with writable_db.transaction() as conn:
-    ...     conn.root.x = 2
-
     >>> wait_until(db_from_config.storage.is_connected)
     >>> with db_from_config.transaction() as conn:
-    ...     print conn.root()
-    {'x': 2}
+    ...     conn.root.x = 2
     >>> wait_until(client.is_connected)
     >>> with db_from_py.transaction() as conn:
     ...     print conn.root()
     {'x': 2}
 
+    >>> print handler
+    zc.zkzeo WARNING
+      New address from <zookeeper.example.com:2181/databases/demo> (CLEAR)
+    zc.zkzeo WARNING
+      New address from <zookeeper.example.com:2181/databases/demo> (CLEAR)
+
+    >>> zk.close()
+    >>> handler.uninstall()
     >>> db_from_py.close()
     >>> db_from_config.close()
-    >>> writable_db.close()
     >>> stop().exception
 

@@ -1,0 +1,71 @@
+
+If a storage server is configured with a static poer and it can't talk
+to ZooKeeper, it won't error, but will keep trying to talk to
+zookeeper in a thread.
+
+    >>> import ZEO.tests.forker
+    >>> port = ZEO.tests.forker.get_port()
+
+    >>> import zc.zkzeo.runzeo, zope.testing.loggingsupport
+    >>> handle = zope.testing.loggingsupport.InstalledHandler('zc.zk')
+
+    >>> stop = zc.zkzeo.runzeo.test('''
+    ...   <zeo>
+    ...      address 127.0.0.1:%s
+    ...   </zeo>
+    ...
+    ...   <zookeeper>
+    ...      connection 192.0.2.42:2181
+    ...      path /databases/demo
+    ...   </zookeeper>
+    ...
+    ...   <mappingstorage>
+    ...   </mappingstorage>
+    ... ''' % port)
+
+We can connect to the server just fine:
+
+    >>> client = ZEO.client(port)
+    >>> client.is_connected()
+    True
+
+Let's wait a while:
+
+    >>> import time
+    >>> time.sleep(4)
+
+But data isn't in zookeeper yet:
+
+    >>> import zc.zk
+    >>> zk = zc.zk.ZooKeeper('zookeeper.example.com:2181')
+    >>> zk.print_tree('/databases/demo')
+    /demo
+
+And the registration thread is still going:
+
+    >>> import threading
+    >>> [registration_thread] = [
+    ...     t for t in threading.enumerate()
+    ...     if t.name == 'zookeeper_registration_thread'
+    ...     ]
+
+Now, we'll "start" ZooKeeper:
+
+    >>> ZooKeeper._allow_connection('192.0.2.42:2181')
+
+    >>> registration_thread.join(1)
+
+And we not have the entry in the tree:
+
+    >>> zk.print_tree('/databases/demo')
+    /demo
+      /127.0.0.1:24491
+        pid = 1013
+
+And out client is still connected (of course):
+
+    >>> client.is_connected()
+    True
+
+    >>> client.close()
+    >>> _ = stop()

@@ -11,31 +11,28 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
+import logging
 import time
 import zc.zk
 import ZEO.ClientStorage
 import threading
 
-def client(zk, path, *args, **kw):
-    zk = zc.zk.ZooKeeper(zk)
+logger = logging.getLogger('zc.zkzeo')
+
+def client(zkaddr, path, *args, **kw):
+    zk = zc.zk.ZooKeeper(zkaddr)
     addresses = zk.children(path)
+    wait = kw.get('wait', kw.get('wait_for_server_on_startup', True))
     client = ZEO.ClientStorage.ClientStorage(
-        _wait_addresses(addresses, parse_addr),
+        _wait_addresses(addresses, parse_addr, zkaddr, path, wait),
         *args, **kw)
-    return _client(addresses, client)
-
-def DB(*args, **kw):
-    import ZODB
-    return ZODB.DB(client(*args, **kw))
-
-def connection(*args, **kw):
-    return DB(*args, **kw).open_once()
+    return _client(addresses, client, zkaddr, path)
 
 def parse_addr(addr):
     host, port = addr.split(':')
     return host, int(port)
 
-def _client(addresses, client):
+def _client(addresses, client, zkaddr, path):
 
     new_addr = getattr(client, 'new_addr', None)
     if new_addr is None:
@@ -48,22 +45,41 @@ def _client(addresses, client):
                 if manager.thread is not None:
                     manager.thread.addrlist = manager.addrlist
 
+    warned = set()
+
     @addresses
     def changed(addresses):
         addrs = map(parse_addr, addresses)
         if addrs:
-            new_addr(addrs)
+            if warned:
+                logger.warning('New address from <%s%s> (CLEAR)', zkaddr, path)
+                warned.clear()
+            else:
+                logger.info('New address from <%s%s>', zkaddr, path)
+        else:
+            logger.warning('No addresses from <%s%s>', zkaddr, path)
+            warned.add(1)
+        new_addr(addrs)
 
     client.zookeeper_addresses = addresses
 
     return client
 
-def _wait_addresses(addresses, transform):
+def _wait_addresses(addresses, transform, zkaddr, path, wait):
+    n = 0
     while 1:
         result = [transform(addr) for addr in addresses]
         if result:
+            if n:
+                logger.warning("Got addresses at <%s%s> (CLEAR)",
+                               zkaddr, path)
             return result
-        time.sleep(1)
+        if (n%30000) == 0: # warn every few minutes
+            logger.warning("No addresses at <%s%s>", zkaddr, path)
+        if not wait:
+            return result
+        time.sleep(.01)
+        n += 1
 
 class ZConfig:
 
@@ -75,7 +91,8 @@ class ZConfig:
         import ZConfig.datatypes
         import ZODB.config
 
-        zk = zc.zk.ZooKeeper(self.config.zookeeper)
+        zkaddr = self.config.zookeeper
+        zk = zc.zk.ZooKeeper(zkaddr)
         paths = [server.address for server in self.config.server]
         if len(paths) > 1:
             raise TypeError("Only one server option is allowed")
@@ -84,7 +101,8 @@ class ZConfig:
             raise TypeError("server must be a ZooKeeper path, %r" % path)
         addresses = zk.children(path)
         self.config.server = _wait_addresses(
-            addresses, ZConfig.datatypes.SocketAddress)
+            addresses, ZConfig.datatypes.SocketAddress,
+            zkaddr, path, self.config.wait)
 
         client = ZODB.config.ZEOClient(self.config).open()
-        return _client(addresses, client)
+        return _client(addresses, client, zkaddr, path)

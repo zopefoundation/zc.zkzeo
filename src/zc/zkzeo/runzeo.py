@@ -1,4 +1,5 @@
 import os
+import select
 import sys
 import threading
 import time
@@ -19,6 +20,7 @@ class Options(ZEO.runzeo.ZEOOptions):
 
         self.add('zkconnection', 'zookeeper.connection')
         self.add('zkpath', 'zookeeper.path')
+        self.add('zookeeper_session_timeout', 'zookeeper.session_timeout')
 
 class ZKServer(ZEO.runzeo.ZEOServer):
 
@@ -27,22 +29,29 @@ class ZKServer(ZEO.runzeo.ZEOServer):
         ZEO.runzeo.ZEOServer.create_server(self)
         if not self.options.zkpath:
             return
-        addr = self.server.dispatcher.socket.getsockname()
-        if self.__using_dynamic_port:
-            self.__zk = zc.zk.ZooKeeper(self.options.zkconnection, timeout=9)
-            if self.__zk.handle is None:
-                raise SystemError("Couldn;'t connect to ZooKeeper at %r"
-                                  % self.options.zkconnection)
 
-        @zc.thread.Thread
-        def register_w_zk():
-            if self.__zk is None:
-                self.__zk = zc.zk.ZooKeeper(self.options.zkconnection)
-            while self.__zk.handle is None:
-                time.sleep(.1)
+        addr = self.server.dispatcher.socket.getsockname()
+        def register():
             self.__zk.register_server(self.options.zkpath, addr)
             if self.__testing is not None:
                 self.__testing()
+
+        if self.__using_dynamic_port:
+            self.__zk = zc.zk.ZooKeeper(
+                self.options.zkconnection,
+                self.options.zookeeper_session_timeout,
+                )
+            register()
+            return
+
+        @zc.thread.Thread
+        def zookeeper_registration_thread():
+            self.__zk = zc.zk.ZooKeeper(
+                self.options.zkconnection,
+                self.options.zookeeper_session_timeout,
+                wait = True,
+                )
+            register()
 
     def clear_socket(self):
         if self.__zk is not None:
@@ -96,7 +105,7 @@ def close311(self): # based server close method in 3.11
     for name, storage in self.storages.iteritems():
         storage.close()
 
-def test(config, storage=None, zookeeper='127.0.0.1:2181'):
+def test(config, storage=None, zookeeper=None, threaded=True):
     """Run a server in a thread, mainly for testing.
     """
     import tempfile
@@ -125,13 +134,19 @@ def test(config, storage=None, zookeeper='127.0.0.1:2181'):
     server = main(['-C', confpath], event.set)
     os.remove(confpath)
 
+    if not threaded:
+        return server.main()
+
     @zc.thread.Thread
     def run_zeo_server_for_testing():
         try:
             server.main()
+        except select.error:
+            pass
         except:
             import logging
-            logging.getLogger(__name__).exception('wtf')
+            logging.getLogger(__name__+'.test').exception(
+                'wtf %r', sys.exc_info()[1])
 
     def stop():
         close = getattr(server.server, 'close', None)
