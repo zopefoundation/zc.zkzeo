@@ -7,7 +7,7 @@ zookeeper in a thread.
     >>> port = ZEO.tests.forker.get_port()
 
     >>> import zc.zkzeo.runzeo, zope.testing.loggingsupport
-    >>> handle = zope.testing.loggingsupport.InstalledHandler('zc.zk')
+    >>> handler = zope.testing.loggingsupport.InstalledHandler('zc.zk')
 
     >>> stop = zc.zkzeo.runzeo.test('''
     ...   <zeo>
@@ -33,6 +33,15 @@ Let's wait a while:
 
     >>> import time
     >>> time.sleep(4)
+
+We're asking for help:
+
+    >>> print handler # doctest: +ELLIPSIS
+    zc.zk CRITICAL
+      Can't connect to ZooKeeper at '192.0.2.42:2181'
+    zc.zk CRITICAL
+      Can't connect to ZooKeeper at '192.0.2.42:2181'
+    ...
 
 But data isn't in zookeeper yet:
 
@@ -67,5 +76,8 @@ And out client is still connected (of course):
     >>> client.is_connected()
     True
 
+cleanup:
+
+    >>> handler.uninstall()
     >>> client.close()
     >>> _ = stop()
