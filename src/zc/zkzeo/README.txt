@@ -98,7 +98,7 @@ What you really want is a database object::
     ...     'zookeeper.example.com:2181', '/databases/demo',
     ...     max_disconnect_poll=1)
 
-or often, just a database connection:
+or often, just a database connection::
 
     >>> conn = zc.zkzeo.connection(
     ...     'zookeeper.example.com:2181', '/databases/demo',
@@ -258,3 +258,10 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
     >>> exconn.close()
     >>> stop().exception
 
+Change History
+==============
+
+0.1.0 (2011-12-??)
+------------------
+
+Initial release.
