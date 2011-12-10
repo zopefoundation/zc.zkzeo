@@ -43,7 +43,10 @@ The ZEO configuration file has the same options as usual, plus a
    exist.  When the server starts, it will register itself by creating
    a subnode of the path with a name consisting of it's address.
 
-When specifying the ZEO address, you can leave of the port and the
+(You can also specify a ZooKeeper session timeout, in milliseconds,
+with a ``session-timeout`` option.)
+
+When specifying the ZEO address, you can leave off the port and the
 operating system will assign it for you.
 
 To start the server, use the ``zkrunzeo`` script::
@@ -67,7 +70,7 @@ where ``FILENAME`` is the name of the configuration file you created.
 Defining ZEO clients
 ====================
 
-You can define a client in 2 ways, from Python and using a
+You can define a client in two ways, from Python and using a
 configuration file.
 
 Defining ZEO clients with Python
