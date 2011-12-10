@@ -4,7 +4,7 @@ ZEO ZooKeeper
 
 Managing addresses, and especially ports is a drag.  ZooKeeper can be
 used as a service registry.  Servers can register themselves and
-clients can find services there.  The ``zc.zk`` package provides
+clients can find services there.  The ``zc.zkzeo`` package provides
 support for registering ZEO servers and a ZEO client storage that gets
 addresses from ZooKeeper.
 
