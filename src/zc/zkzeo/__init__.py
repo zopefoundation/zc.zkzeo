@@ -22,4 +22,7 @@ def DB(zookeeper_connection_string, path, *args, **kw):
     return ZODB.DB(client(zookeeper_connection_string, path, *args, **kw))
 
 def connection(zookeeper_connection_string, path, *args, **kw):
-    return DB(zookeeper_connection_string, path, *args, **kw).open_once()
+    db = DB(zookeeper_connection_string, path, *args, **kw)
+    conn = db.open()
+    conn.onCloseCallback(db.close)
+    return conn

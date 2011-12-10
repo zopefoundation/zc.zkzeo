@@ -52,10 +52,10 @@ def _client(addresses, client, zkaddr, path):
         addrs = map(parse_addr, addresses)
         if addrs:
             if warned:
-                logger.warning('New address from <%s%s> (CLEAR)', zkaddr, path)
+                logger.warning('OK: Addresses from <%s%s>', zkaddr, path)
                 warned.clear()
-            else:
-                logger.info('New address from <%s%s>', zkaddr, path)
+            logger.info('Addresses from <%s%s>: %r',
+                        zkaddr, path, sorted(addresses))
         else:
             logger.warning('No addresses from <%s%s>', zkaddr, path)
             warned.add(1)
@@ -71,13 +71,13 @@ def _wait_addresses(addresses, transform, zkaddr, path, wait):
         result = [transform(addr) for addr in addresses]
         if result:
             if n:
-                logger.warning("Got addresses at <%s%s> (CLEAR)",
+                logger.warning("OK: Got addresses from <%s%s>",
                                zkaddr, path)
             return result
-        if (n%30000) == 0: # warn every few minutes
-            logger.warning("No addresses at <%s%s>", zkaddr, path)
         if not wait:
             return result
+        if (n%30000) == 0: # warn every few minutes
+            logger.warning("No addresses from <%s%s>", zkaddr, path)
         time.sleep(.01)
         n += 1
 

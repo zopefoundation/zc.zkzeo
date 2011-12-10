@@ -88,6 +88,25 @@ addresses as nodes are added and removed as children of the path.
 You can pass all other ``ZEO.ClientStorage.ClientStorage`` arguments,
 except the address, as additional positional and keyword arguments.
 
+Database and connection convenience functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You're usually not really interested in getting a storage object.
+What you really want is a database object::
+
+    >>> db = zc.zkzeo.DB(
+    ...     'zookeeper.example.com:2181', '/databases/demo',
+    ...     max_disconnect_poll=1)
+
+or often, just a database connection:
+
+    >>> conn = zc.zkzeo.connection(
+    ...     'zookeeper.example.com:2181', '/databases/demo',
+    ...     max_disconnect_poll=1)
+
+.. test
+
+   >>> exconn = conn
 
 Defining ZEO clients in configuration files
 -------------------------------------------
@@ -132,6 +151,15 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
     ...     print conn.root()
     {'x': 1}
 
+    >>> with db.transaction() as conn:
+    ...     print conn.root()
+    {'x': 1}
+
+    >>> import transaction
+    >>> with transaction.manager:
+    ...     print exconn.root()
+    {'x': 1}
+
   When we stop the storage server, we'll get warnings from zc.zkzeo, the
   clients will disconnect and will have no addresses:
 
@@ -144,8 +172,14 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
 
     >>> wait_until(lambda : not client.is_connected())
     >>> wait_until(lambda : not db_from_config.storage.is_connected())
+    >>> wait_until(lambda : not db.storage.is_connected())
+    >>> wait_until(lambda : not exconn.db().storage.is_connected())
 
     >>> print handler
+    zc.zkzeo WARNING
+      No addresses from <zookeeper.example.com:2181/databases/demo>
+    zc.zkzeo WARNING
+      No addresses from <zookeeper.example.com:2181/databases/demo>
     zc.zkzeo WARNING
       No addresses from <zookeeper.example.com:2181/databases/demo>
     zc.zkzeo WARNING
@@ -184,15 +218,43 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
     ...     print conn.root()
     {'x': 2}
 
-    >>> print handler
+    >>> wait_until(db.storage.is_connected)
+    >>> with db.transaction() as conn:
+    ...     print conn.root()
+    {'x': 2}
+
+    >>> wait_until(exconn.db().storage.is_connected)
+    >>> with transaction.manager:
+    ...     print exconn.root()
+    {'x': 2}
+
+    >>> print handler # doctest: +NORMALIZE_WHITESPACE
     zc.zkzeo WARNING
-      New address from <zookeeper.example.com:2181/databases/demo> (CLEAR)
+      OK: Addresses from <zookeeper.example.com:2181/databases/demo>
+    zc.zkzeo INFO
+      Addresses from <zookeeper.example.com:2181/databases/demo>:
+      ['127.0.0.1:52649']
     zc.zkzeo WARNING
-      New address from <zookeeper.example.com:2181/databases/demo> (CLEAR)
+      OK: Addresses from <zookeeper.example.com:2181/databases/demo>
+    zc.zkzeo INFO
+      Addresses from <zookeeper.example.com:2181/databases/demo>:
+      ['127.0.0.1:52649']
+    zc.zkzeo WARNING
+      OK: Addresses from <zookeeper.example.com:2181/databases/demo>
+    zc.zkzeo INFO
+      Addresses from <zookeeper.example.com:2181/databases/demo>:
+      ['127.0.0.1:52649']
+    zc.zkzeo WARNING
+      OK: Addresses from <zookeeper.example.com:2181/databases/demo>
+    zc.zkzeo INFO
+      Addresses from <zookeeper.example.com:2181/databases/demo>:
+      ['127.0.0.1:52649']
 
     >>> zk.close()
     >>> handler.uninstall()
     >>> db_from_py.close()
     >>> db_from_config.close()
+    >>> db.close()
+    >>> exconn.close()
     >>> stop().exception
 

@@ -18,9 +18,13 @@ import manuel.doctest
 import manuel.testing
 import mock
 import re
+import time
 import ZEO.zrpc.connection
+import ZODB.config
 import zc.zk.testing
 import zc.zkzeo
+import zc.zkzeo.runzeo
+import zope.testing.loggingsupport
 import zope.testing.setupstack
 import zope.testing.renormalizing
 
@@ -33,7 +37,6 @@ def client_exception_when_no_zookeeper_running():
     ...
     FailedConnect: 192.0.2.42:2181
 
-    >>> import ZODB.config
     >>> ZODB.config.storageFromString('''
     ... %import zc.zkzeo
     ...
@@ -51,7 +54,6 @@ def client_exception_when_no_zookeeper_running():
 def server_exception_when_no_zookeeper_running_and_dynamic_port():
     """If ZooKeeper isn't running, we get an immediate error.
 
-    >>> import zc.zkzeo.runzeo
     >>> zc.zkzeo.runzeo.test('''
     ...   <zeo>
     ...      address 127.0.0.1
@@ -73,7 +75,6 @@ def server_exception_when_no_zookeeper_running_and_dynamic_port():
 
 def server_session_timeout_setting():
     """
-    >>> import zc.zkzeo.runzeo
     >>> stop = zc.zkzeo.runzeo.test('''
     ...   <zeo>
     ...      address 127.0.0.1
@@ -99,6 +100,141 @@ def server_session_timeout_setting():
     >>> _ = stop()
     """
 
+def client_start_with_empty_addresses():
+    """
+    >>> handler = zope.testing.loggingsupport.InstalledHandler('zc.zkzeo')
+
+    >>> @zc.thread.Thread
+    ... def t1():
+    ...     return zc.zkzeo.client('zookeeper.example.com:2181',
+    ...                            '/databases/demo', max_disconnect_poll=1)
+
+    >>> @zc.thread.Thread
+    ... def t2():
+    ...     return ZODB.config.storageFromString('''
+    ...     %import zc.zkzeo
+    ...     <zkzeoclient>
+    ...        zookeeper zookeeper.example.com:2181
+    ...        server /databases/demo
+    ...        max-disconnect-poll 1
+    ...     </zkzeoclient>
+    ...     ''')
+
+    Wait a while:
+
+    >>> time.sleep(9)
+
+    At this point, since there aren't any addresses, so both threads are
+    still going.
+
+    >>> t1.is_alive(), t2.is_alive()
+    (True, True)
+
+    >>> print handler
+    zc.zkzeo WARNING
+      No addresses from <zookeeper.example.com:2181/databases/demo>
+    zc.zkzeo WARNING
+      No addresses from <zookeeper.example.com:2181/databases/demo>
+
+    >>> handler.clear()
+
+    Now let's start a server:
+
+    >>> stop = zc.zkzeo.runzeo.test(
+    ...     '/databases/demo', None, 'zookeeper.example.com:2181')
+
+    And the clients will connect:
+
+    >>> t1.join(9)
+    >>> t1.value.is_connected()
+    True
+    >>> t2.join(9)
+    >>> t2.value.is_connected()
+    True
+
+    >>> print handler # doctest: +NORMALIZE_WHITESPACE
+    zc.zkzeo WARNING
+      OK: Got addresses from <zookeeper.example.com:2181/databases/demo>
+    zc.zkzeo WARNING
+      OK: Got addresses from <zookeeper.example.com:2181/databases/demo>
+    zc.zkzeo INFO
+      Addresses from <zookeeper.example.com:2181/databases/demo>:
+      ['127.0.0.1:52814']
+    zc.zkzeo INFO
+      Addresses from <zookeeper.example.com:2181/databases/demo>:
+      ['127.0.0.1:52814']
+
+    >>> handler.uninstall()
+
+    >>> t1.value.close()
+    >>> t2.value.close()
+    >>> _ = stop()
+    """
+
+def client_start_with_empty_addresses_and_no_wait():
+    """
+    >>> handler = zope.testing.loggingsupport.InstalledHandler('zc.zkzeo')
+
+    >>> c1 = zc.zkzeo.client(
+    ...     'zookeeper.example.com:2181', '/databases/demo',
+    ...     max_disconnect_poll=1, wait=False)
+
+    >>> c2 = ZODB.config.storageFromString('''
+    ...     %import zc.zkzeo
+    ...     <zkzeoclient>
+    ...        zookeeper zookeeper.example.com:2181
+    ...        server /databases/demo
+    ...        max-disconnect-poll 1
+    ...        wait false
+    ...     </zkzeoclient>
+    ...     ''')
+
+    Wait a while:
+
+    >>> time.sleep(9)
+
+    At this point, since there aren't any addresses, so both clients are
+    disconnected:
+
+    >>> c1.is_connected(), c2.is_connected()
+    (False, False)
+
+    >>> print handler
+    zc.zkzeo WARNING
+      No addresses from <zookeeper.example.com:2181/databases/demo>
+    zc.zkzeo WARNING
+      No addresses from <zookeeper.example.com:2181/databases/demo>
+
+    >>> handler.clear()
+
+    Now let's start a server:
+
+    >>> stop = zc.zkzeo.runzeo.test(
+    ...     '/databases/demo', None, 'zookeeper.example.com:2181')
+
+    And the clients will connect:
+
+    >>> wait_until(c1.is_connected)
+    >>> wait_until(c2.is_connected)
+
+    >>> print handler # doctest: +NORMALIZE_WHITESPACE
+    zc.zkzeo WARNING
+      OK: Addresses from <zookeeper.example.com:2181/databases/demo>
+    zc.zkzeo INFO
+      Addresses from <zookeeper.example.com:2181/databases/demo>:
+      ['127.0.0.1:52814']
+    zc.zkzeo WARNING
+      OK: Addresses from <zookeeper.example.com:2181/databases/demo>
+    zc.zkzeo INFO
+      Addresses from <zookeeper.example.com:2181/databases/demo>:
+      ['127.0.0.1:52814']
+
+    >>> handler.uninstall()
+
+    >>> c1.close()
+    >>> c2.close()
+    >>> _ = stop()
+    """
 
 def setUp(test):
     zc.zk.testing.setUp(test, tree='/databases\n  /demo\n')
@@ -122,12 +258,11 @@ def tearDown(test):
 def test_suite():
     checker = zope.testing.renormalizing.RENormalizing([
         (re.compile(r'pid = \d+'), 'pid = PID'),
-        (re.compile(r'/127.0.0.1:\d+'), '/127.0.0.1:PORT'),
+        (re.compile(r'127.0.0.1:\d+'), '127.0.0.1:PORT'),
         ])
     suite = unittest.TestSuite((
         doctest.DocTestSuite(
-            setUp=setUp, tearDown=zc.zk.testing.tearDown,
-            ),
+            setUp=setUp, tearDown=zc.zk.testing.tearDown, checker=checker),
         manuel.testing.TestSuite(
             manuel.doctest.Manuel(checker=checker) + manuel.capture.Manuel(),
             'README.txt',
