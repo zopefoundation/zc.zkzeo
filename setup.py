@@ -33,7 +33,7 @@ setup(
 
     name = name, version = version,
     long_description=open('README.txt').read(),
-    description = open('README.txt').read().strip().split('\n')[0],
+    description = open('README.txt').read().strip().split('\n')[1],
     packages = [name.split('.')[0], name],
     namespace_packages = [name.split('.')[0]],
     package_dir = {'': 'src'},
