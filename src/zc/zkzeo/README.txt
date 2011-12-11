@@ -121,7 +121,7 @@ Some notes on the monitor server:
 - A monitor server won't be useful unless you've registered some
   command plugins.
 
-- ``zc.monitor`` isn't a dependency of ``zc.zkzopeserver`` and won't
+- ``zc.monitor`` isn't a dependency of ``zc.zkzeoc`` and won't
   be in the Python path unless you install it.
 
 Defining ZEO clients
