@@ -21,6 +21,7 @@ import re
 import time
 import ZEO.zrpc.connection
 import ZODB.config
+import zc.monitor
 import zc.zk.testing
 import zc.zkzeo
 import zc.zkzeo.runzeo
@@ -255,24 +256,29 @@ def tearDown(test):
     zc.zk.testing.tearDown(test)
     ZEO.zrpc.connection.server_loop = test.globs['_server_loop']
 
+def tearDownREADME(test):
+    tearDown(test)
+    zc.monitor.last_listener.close()
+
 def test_suite():
     checker = zope.testing.renormalizing.RENormalizing([
         (re.compile(r'pid = \d+'), 'pid = PID'),
         (re.compile(r'127.0.0.1:\d+'), '127.0.0.1:PORT'),
+        (re.compile(r'localhost:\d+'), 'localhost:PORT'),
         ])
     suite = unittest.TestSuite((
         doctest.DocTestSuite(
-            setUp=setUp, tearDown=zc.zk.testing.tearDown, checker=checker),
+            setUp=setUp, tearDown=tearDown, checker=checker),
         manuel.testing.TestSuite(
             manuel.doctest.Manuel(checker=checker) + manuel.capture.Manuel(),
             'README.txt',
-            setUp=setUp, tearDown=zc.zk.testing.tearDown,
+            setUp=setUp, tearDown=tearDownREADME,
             ),
         ))
     if not zc.zk.testing.testing_with_real_zookeeper():
         suite.addTest(doctest.DocFileSuite(
             'wait-for-zookeeper.test',
-            setUp=setUp, tearDown=zc.zk.testing.tearDown,
+            setUp=setUp, tearDown=tearDown,
             checker=checker))
 
     return suite

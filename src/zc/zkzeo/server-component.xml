@@ -16,13 +16,20 @@
 
     <key name="path" datatype="string" required="yes">
       <description>
-        The path to register the 
+        The path to register the ZEO server at.
       </description>
     </key>
 
     <key name="session-timeout" datatype="integer" required="no">
       <description>
         ZooKeeper session timeout in milliseconds.
+      </description>
+    </key>
+
+    <key name="monitor-server" datatype="socket-binding-address" required="no">
+      <description>
+         Run a monitor server. The value should either be true, an
+         address, a host, or a port.
       </description>
     </key>
 

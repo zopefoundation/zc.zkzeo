@@ -21,6 +21,7 @@ class Options(ZEO.runzeo.ZEOOptions):
         self.add('zkconnection', 'zookeeper.connection')
         self.add('zkpath', 'zookeeper.path')
         self.add('zookeeper_session_timeout', 'zookeeper.session_timeout')
+        self.add('monitor_server', 'zookeeper.monitor_server')
 
 class ZKServer(ZEO.runzeo.ZEOServer):
 
@@ -32,7 +33,15 @@ class ZKServer(ZEO.runzeo.ZEOServer):
 
         addr = self.server.dispatcher.socket.getsockname()
         def register():
-            self.__zk.register_server(self.options.zkpath, addr)
+
+            props = {}
+            if self.options.monitor_server:
+                global zc
+                import zc.monitor
+                props['monitor'] = "%s:%s" % zc.monitor.start(
+                    self.options.monitor_server)
+
+            self.__zk.register_server(self.options.zkpath, addr, **props)
             if self.__testing is not None:
                 self.__testing()
 

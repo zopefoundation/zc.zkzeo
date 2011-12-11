@@ -16,7 +16,7 @@ name, version = 'zc.zkzeo', '0'
 install_requires = [
     'setuptools', 'zc.zk [static]', 'ZODB3', 'zc.thread']
 extras_require = dict(
-    test=['zope.testing', 'zc.zk [static,test]', 'manuel'],
+    test=['zope.testing', 'zc.zk [static,test]', 'manuel', 'zc.monitor'],
     )
 
 entry_points = """

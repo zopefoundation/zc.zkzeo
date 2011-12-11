@@ -59,13 +59,62 @@ To start the server, use the ``zkrunzeo`` script::
     >>> stop = zc.zkzeo.runzeo.test(
     ...     server_conf)
     >>> zk = zc.zk.ZooKeeper('zookeeper.example.com:2181')
-    >>> print zk.export_tree('/databases/demo', ephemeral=True),
+    >>> zk.print_tree('/databases/demo')
     /demo
       /127.0.0.1:56824
         pid = 88841
 
+    >>> _ = stop()
+    >>> zk.print_tree('/databases/demo')
+    /demo
+
+    >>> zk.close()
+
 where ``FILENAME`` is the name of the configuration file you created.
 
+Including a ``zc.monitor`` monitoring server
+--------------------------------------------
+
+The `zc.monitor <http://pypi.python.org/pypi/zc.monitor>`_ package
+provides a simple extensible command server for gathering monitoring
+data or providing run-time control of servers.  If ``zc.monitor`` is
+in the Python path, ``zc.zk`` can start a monitor server and make it's
+address available as the ``monitor`` property of of a server's
+ephemeral port.  To request this, we use a ``monitor-server`` option in
+the ``zookeeper`` section::
+
+   <zeo>
+      address 127.0.0.1
+   </zeo>
+
+   <zookeeper>
+      connection zookeeper.example.com:2181
+      path /databases/demo
+      monitor-server 127.0.0.1
+   </zookeeper>
+
+   <filestorage>
+      path demo.fs
+   </filestorage>
+
+.. -> server_conf
+
+    >>> stop = zc.zkzeo.runzeo.test(
+    ...     server_conf)
+
+The value is the address to listen on.
+
+With the configuration above, if we started the server and looked at
+the ZooKeeper tree for '/databases/demo' using the ``zc.zk`` package, we'd
+see something like the following::
+
+    >>> import zc.zk
+    >>> zk = zc.zk.ZooKeeper('zookeeper.example.com:2181')
+    >>> zk.print_tree('/databases/demo')
+    /demo
+      /127.0.0.1:64211
+        monitor = u'localhost:11976'
+        pid = 5082
 
 Defining ZEO clients
 ====================
@@ -211,6 +260,7 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
     >>> print zk.export_tree('/databases/demo', ephemeral=True),
     /demo
       /127.0.0.1:56837
+        monitor = u'localhost:23265'
         pid = 88841
 
     >>> wait_until(db_from_config.storage.is_connected)
