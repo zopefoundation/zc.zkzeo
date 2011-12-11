@@ -78,7 +78,7 @@ Including a ``zc.monitor`` monitoring server
 The `zc.monitor <http://pypi.python.org/pypi/zc.monitor>`_ package
 provides a simple extensible command server for gathering monitoring
 data or providing run-time control of servers.  If ``zc.monitor`` is
-in the Python path, ``zc.zk`` can start a monitor server and make it's
+in the Python path, ``zc.zkzeo`` can start a monitor server and make it's
 address available as the ``monitor`` property of of a server's
 ephemeral port.  To request this, we use a ``monitor-server`` option in
 the ``zookeeper`` section::
@@ -115,6 +115,14 @@ see something like the following::
       /127.0.0.1:64211
         monitor = u'localhost:11976'
         pid = 5082
+
+Some notes on the monitor server:
+
+- A monitor server won't be useful unless you've registered some
+  command plugins.
+
+- ``zc.monitor`` isn't a dependency of ``zc.zkzopeserver`` and won't
+  be in the Python path unless you install it.
 
 Defining ZEO clients
 ====================
@@ -314,7 +322,7 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
 Change History
 ==============
 
-0.1.0 (2011-12-??)
+0.1.0 (2011-12-11)
 ------------------
 
 Initial release.
