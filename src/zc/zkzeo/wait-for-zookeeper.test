@@ -1,5 +1,5 @@
 
-If a storage server is configured with a static poer and it can't talk
+If a storage server is configured with a static port and it can't talk
 to ZooKeeper, it won't error, but will keep trying to talk to
 zookeeper in a thread.
 
