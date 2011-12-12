@@ -323,8 +323,12 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
 Change History
 ==============
 
-0.1.3 (2011-12-12)
+0.2.0 (2011-12-12)
 ------------------
+
+- Register the host name from the ZEO address setting with ZooKeeper.
+  (This is often an empty string, which ``zc.zk`` turns into the
+  fully-quelified domain name.)
 
 - Fixed bug in handling the monitor-server. The actuall address
   setting was ignored.

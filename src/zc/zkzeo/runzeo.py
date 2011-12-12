@@ -31,7 +31,8 @@ class ZKServer(ZEO.runzeo.ZEOServer):
         if not self.options.zkpath:
             return
 
-        addr = self.server.dispatcher.socket.getsockname()
+        addr = (self.server.addr[0],
+                self.server.dispatcher.socket.getsockname()[1])
         def register():
 
             props = {}
@@ -44,7 +45,7 @@ class ZKServer(ZEO.runzeo.ZEOServer):
                     maddr = maddr[0], 0
                 props['monitor'] = "%s:%s" % zc.monitor.start(maddr)
 
-            self.__zk.register_server(self.options.zkpath, addr, **props)
+            self.__zk.register_server(self.options.zkpath, addr[:2], **props)
             if self.__testing is not None:
                 self.__testing()
 

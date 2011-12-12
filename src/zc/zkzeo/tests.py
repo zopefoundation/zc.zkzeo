@@ -237,6 +237,33 @@ def client_start_with_empty_addresses_and_no_wait():
     >>> _ = stop()
     """
 
+def using_empty_hosts_uses_fqdn():
+    """
+    >>> stop = zc.zkzeo.runzeo.test('''
+    ...     <zeo>
+    ...         address :
+    ...     </zeo>
+    ...
+    ...     <zookeeper>
+    ...        connection zookeeper.example.com:2181
+    ...        path /databases/demo
+    ...     </zookeeper>
+    ...
+    ...     <filestorage>
+    ...        path demo.fs
+    ...     </filestorage>
+    ...     ''')
+
+    >>> zk = zc.zk.ZooKeeper('zookeeper.example.com:2181')
+    >>> zk.print_tree('/databases/demo')
+    /demo
+      /server.example.com:57978
+        pid = 8315
+
+    >>> zk.close()
+    >>> _ = stop()
+    """
+
 def setUp(test):
     zc.zk.testing.setUp(test, tree='/databases\n  /demo\n')
     test.globs['_server_loop'] = _server_loop = ZEO.zrpc.connection.server_loop
@@ -252,6 +279,11 @@ def setUp(test):
 
     ZEO.zrpc.connection.server_loop = server_loop
 
+    cm = mock.patch('socket.getfqdn')
+    m = cm.__enter__()
+    m.side_effect = lambda : 'server.example.com'
+    test.globs['zc.zk.testing'].append(cm.__exit__)
+
 def tearDown(test):
     zc.zk.testing.tearDown(test)
     ZEO.zrpc.connection.server_loop = test.globs['_server_loop']
@@ -264,6 +296,7 @@ def test_suite():
     checker = zope.testing.renormalizing.RENormalizing([
         (re.compile(r'pid = \d+'), 'pid = PID'),
         (re.compile(r'127.0.0.1:\d+'), '127.0.0.1:PORT'),
+        (re.compile(r'server.example.com:\d+'), 'server.example.com:PORT'),
         (re.compile(r'localhost:\d+'), 'localhost:PORT'),
         ])
     suite = unittest.TestSuite((
