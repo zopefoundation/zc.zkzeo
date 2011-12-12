@@ -113,7 +113,7 @@ see something like the following::
     >>> zk.print_tree('/databases/demo')
     /demo
       /127.0.0.1:64211
-        monitor = u'localhost:11976'
+        monitor = u'127.0.0.1:11976'
         pid = 5082
 
 Some notes on the monitor server:
@@ -228,6 +228,7 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
     >>> handler.install()
 
     >>> [old_addr] = zk.get_children('/databases/demo')
+
     >>> stop().exception
 
     >>> wait_until(lambda : not client.is_connected())
@@ -268,7 +269,7 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
     >>> print zk.export_tree('/databases/demo', ephemeral=True),
     /demo
       /127.0.0.1:56837
-        monitor = u'localhost:23265'
+        monitor = u'127.0.0.1:23265'
         pid = 88841
 
     >>> wait_until(db_from_config.storage.is_connected)
@@ -321,6 +322,12 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
 
 Change History
 ==============
+
+0.1.3 (2011-12-12)
+------------------
+
+- Fixed bug in handling the monitor-server. The actuall address
+  setting was ignored.
 
 0.1.1 (2011-12-12)
 ------------------
