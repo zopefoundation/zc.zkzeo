@@ -323,7 +323,7 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
 Change History
 ==============
 
-0.2.0 (2011-12-12)
+0.2.0 (2011-12-13)
 ------------------
 
 - Register the host name from the ZEO address setting with ZooKeeper.
