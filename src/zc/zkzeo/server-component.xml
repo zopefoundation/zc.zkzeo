@@ -14,7 +14,7 @@
       </description>
     </key>
 
-    <key name="path" datatype="string" required="yes">
+    <key name="path" datatype="string" required="no">
       <description>
         The path to register the ZEO server at.
       </description>

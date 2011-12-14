@@ -264,6 +264,28 @@ def using_empty_hosts_uses_fqdn():
     >>> _ = stop()
     """
 
+def empty_zookeeper_section():
+    """
+All of the zookeeper section keys should be optional:
+
+    >>> stop = zc.zkzeo.runzeo.test('''
+    ...     <zeo>
+    ...         address :
+    ...     </zeo>
+    ...
+    ...     <zookeeper>
+    ...     </zookeeper>
+    ...
+    ...     <filestorage>
+    ...        path demo.fs
+    ...     </filestorage>
+    ...     ''')
+
+    >>> _ = stop()
+
+
+    """
+
 def setUp(test):
     zc.zk.testing.setUp(test, tree='/databases\n  /demo\n')
     test.globs['_server_loop'] = _server_loop = ZEO.zrpc.connection.server_loop

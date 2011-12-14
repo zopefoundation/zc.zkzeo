@@ -323,6 +323,12 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
 Change History
 ==============
 
+0.2.1 (2011-12-14)
+------------------
+
+- Fixed bug: The ``path`` key on the ``zookeeper``
+  server-configuration section was required, and shouldn't have been.
+
 0.2.0 (2011-12-13)
 ------------------
 
