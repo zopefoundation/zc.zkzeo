@@ -326,14 +326,17 @@ Change History
 0.3.0 (2012-02-07)
 ------------------
 
-- Fixed: zc.zkzeo depended on ``zc.zk [static]``, which forced
-  installation of ``zc-zookeeper-static``, which should be optional.
-
 - Added a static extra to force a dependency on
   ``zc-zookeeper-static``.
 
+- Fixed: zc.zkzeo depended on ``zc.zk [static]``, which forced
+  installation of ``zc-zookeeper-static``, which should be optional.
+
 - Fixed: tests didn't pass with a recent change in handling of
   registration with empty host names in ``zc.zk``.
+
+- Fixed: Packaging: distribute can't install distributions with
+  symlinks, so stopped using symlinks in distribution.
 
 0.2.1 (2011-12-14)
 ------------------
