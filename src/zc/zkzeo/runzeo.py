@@ -100,7 +100,7 @@ def main(args=None, testing=None):
         return s
     s.main()
 
-def close311(self): # based server close method in 3.11
+def close311(self): # based on server close method in 3.11
 
     # Stop accepting connections
     self.dispatcher.close()
