@@ -329,6 +329,9 @@ Change History
 - Added a static extra to force a dependency on
   ``zc-zookeeper-static``.
 
+- In test mode, use a shorter asyncore loop timeout to make the server
+  shut down faster.
+
 - Fixed: zc.zkzeo depended on ``zc.zk [static]``, which forced
   installation of ``zc-zookeeper-static``, which should be optional.
 

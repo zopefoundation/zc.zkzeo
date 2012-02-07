@@ -47,7 +47,15 @@ class ZKServer(ZEO.runzeo.ZEOServer):
 
             self.__zk.register_server(self.options.zkpath, addr[:2], **props)
             if self.__testing is not None:
+
+                if not hasattr(self.server, 'loop'):
+                    # XXX the patch below doesn't work in 3.11.  We'll
+                    # probably want to add a timeout option in the
+                    # long run.
+                    self.server.loop_forever = lambda : asyncore.loop(.1)
+
                 self.__testing()
+
 
         if self.__using_dynamic_port:
             self.__zk = zc.zk.ZooKeeper(
