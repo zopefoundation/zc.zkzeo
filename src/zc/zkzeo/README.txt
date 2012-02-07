@@ -327,7 +327,7 @@ Change History
 ------------------
 
 - Fixed: zc.zkzeo depended on ``zc.zk [static]``, which forced
-  installation if ``zc-zookeeper-static``, which should be optional.
+  installation of ``zc-zookeeper-static``, which should be optional.
 
 - Added a static extra to force a dependency on
   ``zc-zookeeper-static``.
