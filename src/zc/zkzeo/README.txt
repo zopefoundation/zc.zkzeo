@@ -323,6 +323,18 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
 Change History
 ==============
 
+0.3.0 (2012-02-07)
+------------------
+
+- Fixed: zc.zkzeo depended on ``zc.zk [static]``, which forced
+  installation if ``zc-zookeeper-static``, which should be optional.
+
+- Added a static extra to force a dependency on
+  ``zc-zookeeper-static``.
+
+- Fixed: tests didn't pass with a recent change in handling of
+  registration with empty host names in ``zc.zk``.
+
 0.2.1 (2011-12-14)
 ------------------
 

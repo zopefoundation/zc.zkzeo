@@ -11,6 +11,7 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
+from zope.testing import setupstack
 import doctest
 import unittest
 import manuel.capture
@@ -26,7 +27,6 @@ import zc.zk.testing
 import zc.zkzeo
 import zc.zkzeo.runzeo
 import zope.testing.loggingsupport
-import zope.testing.setupstack
 import zope.testing.renormalizing
 
 
@@ -237,7 +237,7 @@ def client_start_with_empty_addresses_and_no_wait():
     >>> _ = stop()
     """
 
-def using_empty_hosts_uses_fqdn():
+def using_empty_hosts():
     """
     >>> stop = zc.zkzeo.runzeo.test('''
     ...     <zeo>
@@ -257,7 +257,7 @@ def using_empty_hosts_uses_fqdn():
     >>> zk = zc.zk.ZooKeeper('zookeeper.example.com:2181')
     >>> zk.print_tree('/databases/demo')
     /demo
-      /server.example.com:57978
+      /1.2.3.4:57718
         pid = 8315
 
     >>> zk.close()
@@ -287,11 +287,12 @@ All of the zookeeper section keys should be optional:
     """
 
 def setUp(test):
+    setupstack.setUpDirectory(test)
     zc.zk.testing.setUp(test, tree='/databases\n  /demo\n')
-    test.globs['_server_loop'] = _server_loop = ZEO.zrpc.connection.server_loop
 
     # The original server loop spews thread exceptions during shutdowm.
     # This version doesn't.
+    from ZEO.zrpc.connection import server_loop as _server_loop
     def server_loop(map):
         try:
             _server_loop(map)
@@ -299,16 +300,19 @@ def setUp(test):
             if len(map) > 1:
                 raise
 
-    ZEO.zrpc.connection.server_loop = server_loop
+    setupstack.context_manager(
+        test, mock.patch('ZEO.zrpc.connection.server_loop')
+        ).side_effect = server_loop
 
-    cm = mock.patch('socket.getfqdn')
-    m = cm.__enter__()
-    m.side_effect = lambda : 'server.example.com'
-    test.globs['zc.zk.testing'].append(cm.__exit__)
+    setupstack.context_manager(
+        test, mock.patch('netifaces.interfaces')).return_value = ['iface']
+    setupstack.context_manager(
+        test, mock.patch('netifaces.ifaddresses')).return_value = {
+        2: [dict(addr='1.2.3.4')]}
 
 def tearDown(test):
     zc.zk.testing.tearDown(test)
-    ZEO.zrpc.connection.server_loop = test.globs['_server_loop']
+    setupstack.tearDown(test)
 
 def tearDownREADME(test):
     tearDown(test)
@@ -318,7 +322,7 @@ def test_suite():
     checker = zope.testing.renormalizing.RENormalizing([
         (re.compile(r'pid = \d+'), 'pid = PID'),
         (re.compile(r'127.0.0.1:\d+'), '127.0.0.1:PORT'),
-        (re.compile(r'server.example.com:\d+'), 'server.example.com:PORT'),
+        (re.compile(r'1.2.3.4:\d+'), '1.2.3.4:PORT'),
         (re.compile(r'localhost:\d+'), 'localhost:PORT'),
         ])
     suite = unittest.TestSuite((
