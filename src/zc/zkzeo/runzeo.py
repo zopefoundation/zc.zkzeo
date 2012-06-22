@@ -109,7 +109,6 @@ def main(args=None, testing=None):
     s.main()
 
 def close311(self): # based on server close method in 3.11
-
     # Stop accepting connections
     self.dispatcher.close()
     if self.monitor is not None:
@@ -153,21 +152,10 @@ def test(config, storage=None, zookeeper=None, threaded=True):
     os.close(fd)
     event = threading.Event()
     server = main(['-C', confpath], event.set)
+
     os.remove(confpath)
 
-    if not threaded:
-        return server.main()
-
-    @zc.thread.Thread
-    def run_zeo_server_for_testing():
-        try:
-            server.main()
-        except select.error:
-            pass
-        except:
-            import logging
-            logging.getLogger(__name__+'.test').exception(
-                'wtf %r', sys.exc_info()[1])
+    run_zeo_server_for_testing = None
 
     def stop():
         close = getattr(server.server, 'close', None)
@@ -175,8 +163,33 @@ def test(config, storage=None, zookeeper=None, threaded=True):
             close311(server.server)
         else:
             close()
-        run_zeo_server_for_testing.join(1)
-        return run_zeo_server_for_testing
+        assert not server.server.dispatcher._map, server.server.dispatcher._map
+
+        if run_zeo_server_for_testing is not None:
+            run_zeo_server_for_testing.join(11)
+            assert not run_zeo_server_for_testing.is_alive()
+            return run_zeo_server_for_testing
+
+    if not threaded:
+        try:
+            return server.main()
+        except:
+            stop()
+            raise
+
+    @zc.thread.Thread
+    def run_zeo_server_for_testing():
+        import asyncore
+        try:
+            # Make the loop die quickly when we close the storage
+            server.loop_forever = lambda : asyncore.loop(.5)
+            server.main()
+        except select.error:
+            pass
+        except:
+            import logging
+            logging.getLogger(__name__+'.test').exception(
+                'wtf %r', sys.exc_info()[1])
 
     stop.server = server # :)
 

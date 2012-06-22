@@ -68,8 +68,6 @@ To start the server, use the ``zkrunzeo`` script::
     >>> zk.print_tree('/databases/demo')
     /demo
 
-    >>> zk.close()
-
 where ``FILENAME`` is the name of the configuration file you created.
 
 Including a ``zc.monitor`` monitoring server
@@ -108,8 +106,6 @@ With the configuration above, if we started the server and looked at
 the ZooKeeper tree for '/databases/demo' using the ``zc.zk`` package, we'd
 see something like the following::
 
-    >>> import zc.zk
-    >>> zk = zc.zk.ZooKeeper('zookeeper.example.com:2181')
     >>> zk.print_tree('/databases/demo')
     /demo
       /127.0.0.1:64211
@@ -231,10 +227,11 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
 
     >>> stop().exception
 
-    >>> wait_until(lambda : not client.is_connected())
-    >>> wait_until(lambda : not db_from_config.storage.is_connected())
-    >>> wait_until(lambda : not db.storage.is_connected())
-    >>> wait_until(lambda : not exconn.db().storage.is_connected())
+    >>> from zope.testing.wait import wait
+    >>> wait(lambda : not client.is_connected())
+    >>> wait(lambda : not db_from_config.storage.is_connected())
+    >>> wait(lambda : not db.storage.is_connected())
+    >>> wait(lambda : not exconn.db().storage.is_connected())
 
     >>> print handler
     zc.zkzeo WARNING
@@ -272,20 +269,20 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
         monitor = u'127.0.0.1:23265'
         pid = 88841
 
-    >>> wait_until(db_from_config.storage.is_connected)
+    >>> wait(db_from_config.storage.is_connected)
     >>> with db_from_config.transaction() as conn:
     ...     conn.root.x = 2
-    >>> wait_until(client.is_connected)
+    >>> wait(db_from_py.storage.is_connected, timeout=22)
     >>> with db_from_py.transaction() as conn:
     ...     print conn.root()
     {'x': 2}
 
-    >>> wait_until(db.storage.is_connected)
+    >>> wait(db.storage.is_connected, timeout=22)
     >>> with db.transaction() as conn:
     ...     print conn.root()
     {'x': 2}
 
-    >>> wait_until(exconn.db().storage.is_connected)
+    >>> wait(exconn.db().storage.is_connected, timeout=22)
     >>> with transaction.manager:
     ...     print exconn.root()
     {'x': 2}

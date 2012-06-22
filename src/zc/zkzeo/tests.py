@@ -12,6 +12,7 @@
 #
 ##############################################################################
 from zope.testing import setupstack
+from zope.testing.wait import wait
 import doctest
 import unittest
 import manuel.capture
@@ -215,8 +216,8 @@ def client_start_with_empty_addresses_and_no_wait():
 
     And the clients will connect:
 
-    >>> wait_until(c1.is_connected)
-    >>> wait_until(c2.is_connected)
+    >>> wait(c1.is_connected)
+    >>> wait(c2.is_connected)
 
     >>> print handler # doctest: +NORMALIZE_WHITESPACE
     zc.zkzeo WARNING

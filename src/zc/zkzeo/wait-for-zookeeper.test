@@ -32,7 +32,7 @@ We can connect to the server just fine:
 Let's wait a while:
 
     >>> import time
-    >>> time.sleep(4)
+    >>> time.sleep(12)
 
 We're asking for help:
 
