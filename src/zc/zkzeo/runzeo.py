@@ -43,7 +43,10 @@ class ZKServer(ZEO.runzeo.ZEOServer):
                 maddr = self.options.monitor_server.address
                 if isinstance(maddr, tuple) and maddr[1] is None:
                     maddr = maddr[0], 0
-                props['monitor'] = "%s:%s" % zc.monitor.start(maddr)
+
+                maddr = zc.monitor.start(maddr)
+                if isinstance(maddr, tuple):
+                    props['monitor'] = "%s:%s" % maddr
 
             self.__zk.register_server(self.options.zkpath, addr[:2], **props)
             if self.__testing is not None:

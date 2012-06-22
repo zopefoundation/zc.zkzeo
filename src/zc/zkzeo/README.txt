@@ -97,8 +97,7 @@ the ``zookeeper`` section::
 
 .. -> server_conf
 
-    >>> stop = zc.zkzeo.runzeo.test(
-    ...     server_conf)
+    >>> stop = zc.zkzeo.runzeo.test(server_conf)
 
 The value is the address to listen on.
 
@@ -111,6 +110,53 @@ see something like the following::
       /127.0.0.1:64211
         monitor = u'127.0.0.1:11976'
         pid = 5082
+
+.. verify that we can connect to the monitor:
+
+    >>> [monitor_addr] = zk.get_children('/databases/demo')
+    >>> host, port = monitor_addr.split(':')
+    >>> import socket
+    >>> sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    >>> sock.settimeout(.5)
+    >>> sock.connect((host, int(port)))
+    >>> sock.close()
+    >>> _ = stop()
+
+You can also specify a unix-domain socket name::
+
+   <zeo>
+      address 127.0.0.1
+   </zeo>
+
+   <zookeeper>
+      connection zookeeper.example.com:2181
+      path /databases/demo
+      monitor-server ./monitor.sock
+   </zookeeper>
+
+   <filestorage>
+      path demo.fs
+   </filestorage>
+
+.. -> server_conf
+
+    >>> stop = zc.zkzeo.runzeo.test(server_conf)
+
+When using a unix-domain socket, the monitor address isn't included in
+the tree:
+
+    >>> zk.print_tree('/databases/demo')
+    /demo
+      /127.0.0.1:64213
+        pid = 5082
+
+.. verify that we can connect to the monitor:
+
+    >>> sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    >>> sock.settimeout(.5)
+    >>> sock.connect('./monitor.sock')
+    >>> sock.close()
+
 
 Some notes on the monitor server:
 
@@ -266,23 +312,25 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
     >>> print zk.export_tree('/databases/demo', ephemeral=True),
     /demo
       /127.0.0.1:56837
-        monitor = u'127.0.0.1:23265'
         pid = 88841
 
     >>> wait(db_from_config.storage.is_connected)
     >>> with db_from_config.transaction() as conn:
     ...     conn.root.x = 2
     >>> wait(db_from_py.storage.is_connected, timeout=22)
+    >>> time.sleep(.1)
     >>> with db_from_py.transaction() as conn:
     ...     print conn.root()
     {'x': 2}
 
     >>> wait(db.storage.is_connected, timeout=22)
+    >>> time.sleep(.1)
     >>> with db.transaction() as conn:
     ...     print conn.root()
     {'x': 2}
 
     >>> wait(exconn.db().storage.is_connected, timeout=22)
+    >>> time.sleep(.1)
     >>> with transaction.manager:
     ...     print exconn.root()
     {'x': 2}
@@ -319,6 +367,11 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
 
 Change History
 ==============
+
+0.3.1 (2012-06-22)
+------------------
+
+- Fixed: setting a monitor server on a unix-domain socket didn't work.
 
 0.3.0 (2012-02-07)
 ------------------
