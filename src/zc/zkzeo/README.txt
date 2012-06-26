@@ -368,7 +368,7 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
 Change History
 ==============
 
-0.3.1 (2012-06-22)
+0.3.1 (2012-06-26)
 ------------------
 
 - Fixed: setting a monitor server on a unix-domain socket didn't work.
