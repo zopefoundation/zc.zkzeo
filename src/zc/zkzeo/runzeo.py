@@ -83,7 +83,7 @@ class ZKServer(ZEO.runzeo.ZEOServer):
         ZEO.runzeo.ZEOServer.clear_socket(self)
 
     def check_socket(self):
-        if self.options.address[1] == None:
+        if not self.options.address[1]:
             self.options.address = self.options.address[0], 0
             self.__using_dynamic_port = True
             return

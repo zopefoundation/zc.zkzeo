@@ -75,6 +75,28 @@ def server_exception_when_no_zookeeper_running_and_dynamic_port():
     FailedConnect: 192.0.2.42:2181
     """
 
+def server_exception_when_no_zookeeper_running_and_dynamic_port_0():
+    """If ZooKeeper isn't running, we get an immediate error.
+
+    >>> zc.zkzeo.runzeo.test('''
+    ...   <zeo>
+    ...      address :0
+    ...   </zeo>
+    ...
+    ...   <zookeeper>
+    ...      connection 192.0.2.42:2181
+    ...      path /databases/demo
+    ...   </zookeeper>
+    ...
+    ...   <filestorage>
+    ...      path demo.fs
+    ...   </filestorage>
+    ... ''', threaded=False)
+    Traceback (most recent call last):
+    ...
+    FailedConnect: 192.0.2.42:2181
+    """
+
 def server_session_timeout_setting():
     """
     >>> stop = zc.zkzeo.runzeo.test('''

@@ -368,6 +368,12 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
 Change History
 ==============
 
+0.3.2 (2012-07-10)
+------------------
+
+- Fixed: Didn't work with explicit configuration of port 0, which is
+  recently supported by ZConfig.
+
 0.3.1 (2012-06-26)
 ------------------
 
