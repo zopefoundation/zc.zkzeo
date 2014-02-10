@@ -115,9 +115,6 @@ def server_session_timeout_setting():
     ...   </filestorage>
     ... ''')
 
-    >>> import zc.zk
-    >>> zk = zc.zk.ZooKeeper('zookeeper.example.com:2181')
-
     >>> stop.server._ZKServer__zk.recv_timeout()
     4242
 
