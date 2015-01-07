@@ -1,3 +1,4 @@
+import asyncore
 import os
 import select
 import sys
@@ -50,12 +51,9 @@ class ZKServer(ZEO.runzeo.ZEOServer):
 
             self.__zk.register_server(self.options.zkpath, addr[:2], **props)
             if self.__testing is not None:
-
-                if not hasattr(self.server, 'loop'):
-                    # XXX the patch below doesn't work in 3.11.  We'll
-                    # probably want to add a timeout option in the
-                    # long run.
-                    self.server.loop_forever = lambda : asyncore.loop(.1)
+                # XXX need to find a way to do this wo monkey patching. :/
+                self.server.loop = (
+                    lambda : asyncore.loop(.1, map=self.server.socket_map))
 
                 self.__testing()
 
@@ -111,23 +109,6 @@ def main(args=None, testing=None):
         return s
     s.main()
 
-def close311(self): # based on server close method in 3.11
-    # Stop accepting connections
-    self.dispatcher.close()
-    if self.monitor is not None:
-        self.monitor.close()
-
-    # Close open client connections
-    for sid, connections in self.connections.items():
-        for conn in connections[:]:
-            try:
-                conn.connection.close()
-            except:
-                pass
-
-    for name, storage in self.storages.iteritems():
-        storage.close()
-
 def test(config, storage=None, zookeeper=None, threaded=True):
     """Run a server in a thread, mainly for testing.
     """
@@ -161,11 +142,7 @@ def test(config, storage=None, zookeeper=None, threaded=True):
     run_zeo_server_for_testing = None
 
     def stop():
-        close = getattr(server.server, 'close', None)
-        if close is None:
-            close311(server.server)
-        else:
-            close()
+        server.server.close()
         assert not server.server.dispatcher._map, server.server.dispatcher._map
 
         if run_zeo_server_for_testing is not None:
@@ -184,8 +161,6 @@ def test(config, storage=None, zookeeper=None, threaded=True):
     def run_zeo_server_for_testing():
         import asyncore
         try:
-            # Make the loop die quickly when we close the storage
-            server.loop_forever = lambda : asyncore.loop(.5)
             server.main()
         except select.error:
             pass

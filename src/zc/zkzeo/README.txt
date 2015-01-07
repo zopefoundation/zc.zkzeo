@@ -121,6 +121,8 @@ see something like the following::
     >>> sock.connect((host, int(port)))
     >>> sock.close()
     >>> _ = stop()
+    >>> import zc.monitor
+    >>> zc.monitor.last_listener.close()
 
 You can also specify a unix-domain socket name::
 
@@ -272,6 +274,7 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
     >>> [old_addr] = zk.get_children('/databases/demo')
 
     >>> stop().exception
+    >>> zc.monitor.last_listener.close()
 
     >>> from zope.testing.wait import wait
     >>> wait(lambda : not client.is_connected())
@@ -364,9 +367,12 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
     >>> db.close()
     >>> exconn.close()
     >>> stop().exception
+    >>> zc.monitor.last_listener.close()
 
 Change History
 ==============
+
+- Updated to work with ZEO/ZODB rather than ZODB3.
 
 0.3.2 (2012-07-10)
 ------------------
