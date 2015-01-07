@@ -39,7 +39,9 @@ class ZKServer(ZEO.runzeo.ZEOServer):
             props = {}
             if self.options.monitor_server:
                 global zc
-                import zc.monitor
+                import zc.monitor, zope.configuration.xmlconfig
+                zope.configuration.xmlconfig.file('monitor.zcml', package=zc.zk)
+                zc.monitor.register_basics()
 
                 maddr = self.options.monitor_server.address
                 if isinstance(maddr, tuple) and maddr[1] is None:
