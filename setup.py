@@ -31,7 +31,7 @@ from setuptools import setup
 import os
 here = os.path.dirname(__file__)
 with open(
-    os.path.join(here, *(['src'] + name.split('.') + ['README.txt']))
+    os.path.join(here, *(['src'] + name.split('.') + ['README.rst']))
     ) as inp:
     with open(os.path.join(here, 'README.txt'), 'w') as outp:
         outp.write(inp.read())
