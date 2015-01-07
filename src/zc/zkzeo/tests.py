@@ -350,7 +350,7 @@ def test_suite():
             setUp=setUp, tearDown=tearDown, checker=checker),
         manuel.testing.TestSuite(
             manuel.doctest.Manuel(checker=checker) + manuel.capture.Manuel(),
-            'README.txt',
+            'README.rst',
             setUp=setUp, tearDown=tearDownREADME,
             ),
         ))
