@@ -29,6 +29,11 @@ class ZKServer(ZEO.runzeo.ZEOServer):
     __zk = __testing = __using_dynamic_port = None
     def create_server(self):
         ZEO.runzeo.ZEOServer.create_server(self)
+        if self.__testing is not None:
+            # Make the loop dies quickly when we close the storage
+            # XXX should find a way to do this wo monkey patching. :/
+            self.server.loop = (
+                lambda : asyncore.loop(.1, map=self.server.socket_map))
         if not self.options.zkpath:
             return
 
@@ -51,12 +56,7 @@ class ZKServer(ZEO.runzeo.ZEOServer):
 
             self.__zk.register_server(self.options.zkpath, addr[:2], **props)
             if self.__testing is not None:
-                # XXX need to find a way to do this wo monkey patching. :/
-                self.server.loop = (
-                    lambda : asyncore.loop(.1, map=self.server.socket_map))
-
                 self.__testing()
-
 
         if self.__using_dynamic_port:
             self.__zk = zc.zk.ZooKeeper(
