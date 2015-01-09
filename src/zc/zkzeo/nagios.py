@@ -79,7 +79,7 @@ def find_server(zookeeper, path, monitor_address):
             return print("No servers at: %r" % monitor_address)
         if len(servers) > 1:
             return print("Too many servers, %r, at: %r" %
-                         (servers, monitor_address))
+                         (sorted(servers), monitor_address))
         server = servers[0]
 
     zk = zc.zk.ZK(zookeeper)
