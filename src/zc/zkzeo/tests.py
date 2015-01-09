@@ -435,4 +435,3 @@ def test_suite():
             checker=checker))
 
     return suite
-

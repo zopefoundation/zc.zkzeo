@@ -231,7 +231,7 @@ that to determine which one to use. Just provide the monitor server address::
      waiting=0
     1
 
-    There's also a helper function useful for other monitors:
+There's also a helper function useful for other monitors:
 
     >>> import zc.zkzeo.nagios
     >>> [zc.zkzeo.nagios.find_server(
