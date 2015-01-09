@@ -16,13 +16,15 @@ name, version = 'zc.zkzeo', '0'
 install_requires = [
     'setuptools', 'zc.zk', 'ZEO', 'zc.thread']
 extras_require = dict(
-    test=['zope.testing', 'zc.zk [test]', 'manuel', 'zc.monitor'],
+    test=['zope.testing', 'zc.zk [test]', 'manuel', 'zc.monitor',
+          'zope.configuration'],
     static=[],
     )
 
 entry_points = """
 [console_scripts]
 zkrunzeo = zc.zkzeo.runzeo:main
+zkzeo-nagios = zc.zkzeo.nagios:main
 """
 
 from setuptools import setup

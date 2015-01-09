@@ -64,7 +64,7 @@ To start the server, use the ``zkrunzeo`` script::
       /127.0.0.1:56824
         pid = 88841
 
-    >>> _ = stop()
+    >>> stop().exception
     >>> zk.print_tree('/databases/demo')
     /demo
 
@@ -115,7 +115,7 @@ see something like the following::
 
     >>> [monitor_addr] = zk.get_children('/databases/demo')
     >>> host, port = monitor_addr.split(':')
-    >>> import socket
+    >>> import socket, time
     >>> sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     >>> sock.settimeout(.5)
     >>> sock.connect((host, int(port)))
@@ -142,6 +142,12 @@ You can also specify a unix-domain socket name::
 
 .. -> server_conf
 
+    We need to clear the zc.zk monitor data so we have a clean monitoring
+    test below.  This is an artifact of running multiple servers in one process.
+
+    >>> import zc.zk.monitor
+    >>> del zc.zk.monitor._servers[:]
+
     >>> stop = zc.zkzeo.runzeo.test(server_conf)
 
 When using a unix-domain socket, the monitor address isn't included in
@@ -157,8 +163,6 @@ the tree:
     >>> sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     >>> sock.settimeout(.5)
     >>> sock.connect('./monitor.sock')
-    >>> sock.close()
-
 
 Some notes on the monitor server:
 
@@ -167,6 +171,79 @@ Some notes on the monitor server:
 
 - ``zc.monitor`` isn't a dependency of ``zc.zkzeoc`` and won't
   be in the Python path unless you install it.
+
+Monitoring
+----------
+
+The zkzeo package provides a Nagios plugin.  The plugin takes a
+ZooKeeper connection string and path to look up a ZEO server at (using
+the zc.zk service-registry framework).  For example, to monitor the
+server defined above::
+
+  zkzeo-nagios zookeeper.example.com:2181 /databases/demo
+
+.. -> src
+
+    >>> import pkg_resources
+    >>> monitor = pkg_resources.load_entry_point(
+    ...     'zc.zkzeo', 'console_scripts', 'zkzeo-nagios')
+    >>> monitor(src.strip().split()[1:])
+    Empty storage u'1'
+    1
+
+The zkzeo nagios monitor supports the same options as the ZEO nagios
+monitor, so for example to get full metrics::
+
+  zkzeo-nagios -m -s statusfile zookeeper.example.com:2181 /databases/demo
+
+.. -> src
+
+    >>> monitor(src.strip().split()[1:])
+    Empty storage u'1'|active_txns=0
+    | connections=0
+     waiting=0
+    1
+    >>> monitor(src.strip().split()[1:])
+    Empty storage u'1'|active_txns=0
+    | connections=0
+     waiting=0
+     aborts=0.0
+     commits=0.0
+     conflicts=0.0
+     conflicts_resolved=0.0
+     loads=0.0
+     stores=0.0
+    1
+
+Sometimes, there may be multiple servers registered at the same path,
+for example if servers are replicated.  When monitoring a single
+server, you need to know which one to check.  If you've a
+monitor-server for your ZEO process, as we did above, then you can use
+that to determine which one to use. Just provide the monitor server address::
+
+  zkzeo-nagios -m -M ./monitor.sock zookeeper.example.com:2181 /databases/demo
+
+.. -> src
+
+    >>> monitor(src.strip().split()[1:])
+    Empty storage u'1'|active_txns=0
+    | connections=0
+     waiting=0
+    1
+
+There's also a helper function useful for other monitors:
+
+    >>> import zc.zkzeo.nagios
+    >>> [zc.zkzeo.nagios.find_server(
+    ...     'zookeeper.example.com:2181',
+    ...     '/databases/demo',
+    ...     None)] == zk.get_children('/databases/demo')
+    True
+    >>> [zc.zkzeo.nagios.find_server(
+    ...     'zookeeper.example.com:2181',
+    ...     '/databases/demo',
+    ...     './monitor.sock')] == zk.get_children('/databases/demo')
+    True
 
 Defining ZEO clients
 ====================
@@ -373,6 +450,8 @@ Change History
 ==============
 
 - Updated to work with ZEO/ZODB rather than ZODB3.
+
+- Added a Nagios monitoring plugin, the script zkzeo-nagios
 
 0.3.2 (2012-07-10)
 ------------------

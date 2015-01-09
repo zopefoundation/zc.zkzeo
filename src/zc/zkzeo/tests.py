@@ -24,6 +24,7 @@ import time
 import ZEO.zrpc.connection
 import ZODB.config
 import zc.monitor
+import zc.zk.monitor
 import zc.zk.testing
 import zc.zkzeo
 import zc.zkzeo.runzeo
@@ -302,8 +303,78 @@ All of the zookeeper section keys should be optional:
     ...     ''')
 
     >>> _ = stop()
+    """
 
+nagios_edge_conf = """
+   <zeo>
+      address :0
+   </zeo>
 
+   <zookeeper>
+      connection zookeeper.example.com:2181
+      path /databases/demo
+      monitor-server ./sock
+   </zookeeper>
+
+   <filestorage>
+      path demo.fs
+   </filestorage>
+
+"""
+def nagios_edge():
+    """Various nagios edge conditions
+
+    >>> import pkg_resources
+    >>> monitor = pkg_resources.load_entry_point(
+    ...     'zc.zkzeo', 'console_scripts', 'zkzeo-nagios')
+
+    >>> monitor('''
+    ... zookeeper.example.com:2181 /databases/demo
+    ... '''.strip().split())
+    Couldn't find server in ZooKeeper
+    2
+
+    >>> monitor('''
+    ... zookeeper.example.com:2181 -m -sstatus -M./sock /databases/demo
+    ... '''.strip().split())
+    Can't connect [Errno 2] No such file or directory
+    2
+
+    >>> ifaddress = '127.0.0.1'
+    >>> stop = zc.zkzeo.runzeo.test(nagios_edge_conf)
+
+    >>> monitor('''
+    ... zookeeper.example.com:2181 -m -sstatus -M./sock /databases/demo
+    ... '''.strip().split())
+    Empty storage u'1'|active_txns=0
+    | connections=0
+     waiting=0
+    1
+
+    >>> zc.zk.monitor._servers.append(
+    ...     dict(path='/databases/demo', address='foo.com:1'))
+    >>> monitor('''
+    ... zookeeper.example.com:2181 -m -sstatus -M./sock /databases/demo
+    ... '''.strip().split())
+    Too many servers, [':54568', 'foo.com:1'], at: './sock'
+    2
+
+    >>> addr = zc.zk.monitor._servers.pop(0)
+    >>> monitor('''
+    ... zookeeper.example.com:2181 -m -sstatus -M./sock /databases/demo
+    ... '''.strip().split())
+    Couldn't find server in ZooKeeper
+    2
+
+    >>> bad = zc.zk.monitor._servers.pop(0)
+    >>> monitor('''
+    ... zookeeper.example.com:2181 -m -sstatus -M./sock /databases/demo
+    ... '''.strip().split())
+    No servers at: './sock'
+    2
+
+    >>> stop().exception
+    >>> zc.monitor.last_listener.close()
     """
 
 def setUp(test):
@@ -326,17 +397,19 @@ def setUp(test):
 
     setupstack.context_manager(
         test, mock.patch('netifaces.interfaces')).return_value = ['iface']
+
+    globs = test.globs
+    globs['ifaddress'] = '1.2.3.4'
     setupstack.context_manager(
-        test, mock.patch('netifaces.ifaddresses')).return_value = {
-        2: [dict(addr='1.2.3.4')]}
+        test, mock.patch('netifaces.ifaddresses',
+                         lambda i: {2: [dict(addr=globs['ifaddress'])]}
+                         ))
+
+    del zc.zk.monitor._servers[:]
 
 def tearDown(test):
     zc.zk.testing.tearDown(test)
     setupstack.tearDown(test)
-
-def tearDownREADME(test):
-    tearDown(test)
-    zc.monitor.last_listener.close()
 
 def test_suite():
     checker = zope.testing.renormalizing.RENormalizing([
@@ -344,6 +417,7 @@ def test_suite():
         (re.compile(r'127.0.0.1:\d+'), '127.0.0.1:PORT'),
         (re.compile(r'1.2.3.4:\d+'), '1.2.3.4:PORT'),
         (re.compile(r'localhost:\d+'), 'localhost:PORT'),
+        (re.compile(r"':\d+'"), "':PORT'"),
         ])
     suite = unittest.TestSuite((
         doctest.DocTestSuite(
@@ -351,7 +425,7 @@ def test_suite():
         manuel.testing.TestSuite(
             manuel.doctest.Manuel(checker=checker) + manuel.capture.Manuel(),
             'README.rst',
-            setUp=setUp, tearDown=tearDownREADME,
+            setUp=setUp, tearDown=tearDown,
             ),
         ))
     if not zc.zk.testing.testing_with_real_zookeeper():
@@ -361,4 +435,3 @@ def test_suite():
             checker=checker))
 
     return suite
-
