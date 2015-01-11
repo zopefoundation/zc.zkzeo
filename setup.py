@@ -19,6 +19,7 @@ extras_require = dict(
     test=['zope.testing', 'zc.zk [test]', 'manuel', 'zc.monitor',
           'zope.configuration'],
     static=[],
+    monitor=['zc.monitor', 'zope.configuration'],
     )
 
 entry_points = """
