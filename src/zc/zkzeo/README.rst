@@ -449,6 +449,11 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
 Change History
 ==============
 
+1.0.1 (2015-01-11)
+------------------
+
+Fixed packaging problem (of course).
+
 1.0.0 (2015-01-11)
 ------------------
 

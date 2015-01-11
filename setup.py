@@ -11,7 +11,7 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
-name, version = 'zc.zkzeo', '1.0.0'
+name, version = 'zc.zkzeo', '1.0.1'
 
 install_requires = [
     'setuptools', 'zc.zk', 'ZEO', 'zc.thread']
