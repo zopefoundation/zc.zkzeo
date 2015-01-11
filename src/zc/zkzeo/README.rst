@@ -449,6 +449,9 @@ The options for ``zkzeoclient`` are the same as for the standard ZODB
 Change History
 ==============
 
+1.0.0 (2015-01-11)
+------------------
+
 - Updated to work with ZEO/ZODB rather than ZODB3.
 
 - Added a Nagios monitoring plugin, the script zkzeo-nagios
